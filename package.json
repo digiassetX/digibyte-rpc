@@ -1,0 +1,19 @@
+{
+  "name": "digibyte-rpc",
+  "version": "1.0.4",
+  "description": "Allows easy access to DigiByte, Bitcoin, ect wallets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Matthew Cornelisse",
+  "license": "MIT",
+  "dependencies": {
+    "got": "^11.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/digiassetX/digibyte-rpc"
+  }
+}

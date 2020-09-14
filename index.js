@@ -9,7 +9,9 @@ class DigiByteRPC {
      * @param {int}     port
      */
     constructor(user,pass,host='localhost',port=14022) {
-        this._uri = `http://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/`;
+        this._uri = `http://${host}:${port}/`;
+        this._user=user;
+        this._pass=pass;
         this.filterClear();
         this.autoClear=true;
         this._retry=0;
@@ -63,6 +65,8 @@ class DigiByteRPC {
         let method = arguments[0];
         let params = [...arguments].splice(1);
 
+
+
         //make request of wallet
         let response=await got.post(this._uri,{
             json: {
@@ -71,6 +75,8 @@ class DigiByteRPC {
                 "method":	method,
                 "params":	params
             },
+            username:       this._user,
+            password:       this._pass,
             retry:			this._retry
         });
 

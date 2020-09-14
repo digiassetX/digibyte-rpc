@@ -1,6 +1,6 @@
 {
   "name": "digibyte-rpc",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Allows easy access to DigiByte, Bitcoin, ect wallets",
   "main": "index.js",
   "scripts": {

@@ -1,16 +1,20 @@
 {
   "name": "digibyte-rpc",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Allows easy access to DigiByte, Bitcoin, ect wallets",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "keywords": [],
   "author": "Matthew Cornelisse",
   "license": "MIT",
   "dependencies": {
-    "got": "^11.6.2"
+    "agentkeepalive": "^4.1.4"
+  },
+  "devDependencies": {
+    "mocha": "^8.4.0",
+    "chai": "^4.3.4"
   },
   "repository": {
     "type": "git",

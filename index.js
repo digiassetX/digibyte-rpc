@@ -1,4 +1,16 @@
-const got=require('got');
+let http = require('http')
+let Agent = require('agentkeepalive');
+const keepaliveAgent=new Agent({
+    maxSockets: 100,
+    maxFreeSockets: 10,
+    timeout: 60000,
+    freeSocketTimeout: 30000, // free socket keepalive for 30 seconds
+});
+const BITCOIND_TIMEOUT = 500;
+
+
+
+
 class DigiByteRPC {
 
     /**
@@ -9,7 +21,8 @@ class DigiByteRPC {
      * @param {int}     port
      */
     constructor(user,pass,host='localhost',port=14022) {
-        this._uri = `http://${host}:${port}/`;
+        this._host=host;
+        this._port=port;
         this._user=user;
         this._pass=pass;
         this.filterClear();
@@ -45,50 +58,115 @@ class DigiByteRPC {
     /**
      * Allows you to set a custom filter converting the string to json value
      * If not set will do JSON.parse(body)
-     * @param {function(body)}  filter
+     * @param {function(body)}  func
      */
-    set filter(filter) {
-        this._filter=filter;
+    set filter(func) {
+        this._filter=func;
     }
 
     /**
      * Clears the filter
      */
     filterClear() {
-        this._filter=(body)=>{return JSON.parse(body);};
+        this._filter=(body)=>JSON.parse(body);
     }
 
+    async call () {
+        //process parameters
+        let method = arguments[0];
+        let params = [...arguments].splice(1);
 
+        return new Promise((resolve,reject)=> {
+            let postData = JSON.stringify({method, params, id: '1'});
+            let me=this;
 
+            let options = {
+                agent: keepaliveAgent,
+                hostname: this._host,
+                port: this._port,
+                path: '/',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': postData.length
+                },
+                auth: this._user + ':' + this._pass
+            }
+
+            let req = http.request(options, function A(res) {
+                let data = '';
+                res.setEncoding('utf8');
+                res.on('data', function (chunk) {
+                    data += chunk
+                });
+                res.on('end', function () {
+                    if (res.statusCode === 401) {
+                        reject(res.statusCode);
+                    } else {
+                        try {
+                            let {result,error} =me._filter(data);
+                            if (this._autoClear) me.filterClear();
+                            if (error==null) {
+                                resolve(result);
+                            } else {
+                                reject(error);
+                            }
+                        } catch (err) {
+                            reject({code: null,message: err});
+                        }
+                    }
+                });
+            });
+
+            req.on('error', function response(e) {
+                if (!req.__aleadyErrorCb) {
+                    reject({code: null,message: e.message});
+                    req.__aleadyErrorCb = true;
+                }
+            })
+
+            req.setTimeout(BITCOIND_TIMEOUT, function cb_onTimeout(e) {
+                if (!req.__aleadyErrorCb) {
+                    reject({code: null,message: 'Timed out'});
+                    req.__aleadyErrorCb = true;
+                }
+                req.destroy();
+            })
+
+            // write data to request body
+            req.write(postData)
+            req.end()
+        });
+    }
+/*
     async call() {
         //process parameters
         let method = arguments[0];
         let params = [...arguments].splice(1);
 
 
-
         //make request of wallet
-        let response=await got.post(this._uri,{
+        let response = await got.post(this._uri, {
             json: {
-                "jsonrpc":	"1.0",
-                "id":		"curltext",
-                "method":	method,
-                "params":	params
+                "jsonrpc": "1.0",
+                "id": "curltext",
+                "method": method,
+                "params": params
             },
-            username:       this._user,
-            password:       this._pass,
-            retry:			this._retry
+            username: this._user,
+            password: this._pass,
+            retry: this._retry,
         });
+        console.log("xx");
 
         //handle response
-        if (response.statusCode !== 200) throw new Error("Wallet responded with error("+response.statusCode+")");	//handle communication errors
+        if (response.statusCode !== 200) throw new Error("Wallet responded with error(" + response.statusCode + ")");	//handle communication errors
         const data = this._filter(response.body);						//decode body
         if (this._autoClear) this.filterClear();                        //clear filter if auto clear
-        if (data.error!=null) throw new Error(data.error);		        //handle returned errors
+        if (data.error != null) throw new Error(data.error);		        //handle returned errors
         return data.result;
-
     }
-
+*/
 
 
 
@@ -507,7 +585,7 @@ class DigiByteRPC {
     }
 
     async getAddressesByLabel(){
-        return this.call('getaddressesbylabel',...(Array.from(arguments)));
+        return this.call('getaddressesbylabel', ...(Array.from(arguments)));
     }
 
     async getAddressInfo(){
